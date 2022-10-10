@@ -76,23 +76,23 @@ const float TestData[PatternCount][InputNodes] = {
 }; 
 
 const float TestData_Target[PatternCount][OutputNodes] = {
-  {1},
-  {0},
-  {1},
-  {0},
-  {1},
-  {0},
-  {1},
-  {0},
-  {0},
-  {1},
-  {0},
-  {0},
-  {1},
-  {0},
-  {1},
-  {0},
-  {1}
+  {255},
+  {-255},
+  {255},
+  {-255},
+  {255},
+  {-255},
+  {255},
+  {-255},
+  {-255},
+  {255},
+  {-255},
+  {-255},
+  {255},
+  {-255},
+  {255},
+  {-255},
+  {255}
 };
 
 /******************************************************************
@@ -294,7 +294,7 @@ void loop (){
   Serial.println ();  
   Serial.println ();
   Serial.println ("Training Set Solved! ");
-  Serial.println ("--------"); 
+  Serial.println ("----------------"); 
   Serial.println ();
   Serial.println ();  
   ReportEvery1000 = 1;
@@ -350,7 +350,7 @@ void toTerminal()
     }
     Serial.print ("  Target ");
     for( i = 0 ; i < OutputNodes ; i++ ) {
-      Serial.print (Target[p][i], DEC);
+      Serial.print (Target[p][i]*510 - 255, DEC);
       Serial.print (" ");
     }
 /******************************************************************
@@ -378,7 +378,7 @@ void toTerminal()
     }
     Serial.print ("  Output ");
     for( i = 0 ; i < OutputNodes ; i++ ) {       
-      Serial.print (Output[i], 5);
+      Serial.print (Output[i]*510 - 255, 5);
       Serial.print (" ");
     }
   }
@@ -389,11 +389,11 @@ void toTerminal()
 
 void toTerminal_Test()
 {
-  Serial.print("-------------");
+  Serial.print("------------");
   Serial.println();
   Serial.print("Testing Data");
   Serial.println();
-  Serial.print("-------------");
+  Serial.print("------------");
   Serial.println();
   for( p = 0 ; p < PatternCount ; p++ ) {  
     Serial.println();
@@ -401,14 +401,20 @@ void toTerminal_Test()
     Serial.println (p);     
     Serial.print ("  Input ");
     for( i = 0 ; i < InputNodes ; i++ ) {
-      Serial.print (Input[p][i], DEC);
+      Serial.print (TestData[p][i], DEC);
+      Serial.print (" ");
+    }
+
+    Serial.print ("  Target ");
+    for( i = 0 ; i < OutputNodes ; i++ ) {
+      Serial.print (TestData_Target[p][i], DEC);
       Serial.print (" ");
     }
 
     for( i = 0 ; i < HiddenNodes ; i++ ) {    
       Accum = HiddenWeights[InputNodes][i] ;
       for( j = 0 ; j < InputNodes ; j++ ) {
-        Accum += Input[p][j] * HiddenWeights[j][i] ;
+        Accum += TestData[p][j] * HiddenWeights[j][i] ;
       }
       Hidden[i] = 1.0/(1.0 + exp(-Accum)) ;
     }
@@ -419,6 +425,7 @@ void toTerminal_Test()
         Accum += Hidden[j] * OutputWeights[j][i] ;
       }
       Output[i] = 1.0/(1.0 + exp(-Accum)) ; 
+      Output[i] = Output[i]*510 - 255;
     }
     Serial.print ("  Output ");
     for( i = 0 ; i < OutputNodes ; i++ ) {       
@@ -426,8 +433,7 @@ void toTerminal_Test()
       Serial.print (" ");
     Serial.print ("  Error ");
     for( i = 0 ; i < OutputNodes ; i++ ) {  
-      //Test_Error = abs(Output[i] - TestData_Target[i][0])/Output[i];
-      Test_Error = abs(2*(Output[i] - TestData_Target[i][0])/(abs(Output[i]) + abs(TestData_Target[i][0])));
+      Test_Error = abs(Output[i] - TestData_Target[p][i])/Output[i];
       Serial.print (Test_Error, 5);
       Serial.print (" ");
     }
@@ -437,7 +443,7 @@ void toTerminal_Test()
   Serial.println();
   Serial.print("Testing Data Finished");
   Serial.println();
-  Serial.print("--------");
+  Serial.print("----------------");
   Serial.println();
   Serial.println();
 }
