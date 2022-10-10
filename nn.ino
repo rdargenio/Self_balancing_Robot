@@ -1,11 +1,10 @@
-// Neural Network template to receive IMU values and yield an "output" to select mode of the motors
 #include <math.h>
 
 /******************************************************************
  * Network Configuration - customized per network 
  ******************************************************************/
 
-const int PatternCount = 1;
+const int PatternCount = 17;
 const int InputNodes = 2;
 const int HiddenNodes = 8;
 const int OutputNodes = 1;
@@ -13,6 +12,88 @@ const float LearningRate = 0.3;
 const float Momentum = 0.9;
 const float InitialWeightMax = 0.5;
 const float Success = 0.0004;
+
+//lines 4 - 20
+const float Input[PatternCount][InputNodes] = {
+  {1.14,  0.49},
+  {-1.63, 0.22},
+  {1.90,  0.35},
+  {-1.40, 0.45},
+  {1.17,  0.33},
+  {-1.52, 0.19},
+  {1.07,  0.80},
+  {-2.23, -0.14},
+  {0.76,  1.19},
+  {-1.21, 0.57},
+  {1.20,  0.36},
+  {-1.63, -0.50},
+  {1.15,  -0.40},
+  {-1.48, 0.04},
+  {1.56,  -0.15},
+  {-0.55, 0.12},
+  {2.57,  -0.38}
+}; 
+
+const float Target[PatternCount][OutputNodes] = {
+  {0},
+  {1},
+  {0},
+  {1},
+  {0},
+  {1},
+  {0},
+  {1},
+  {0},
+  {1},
+  {0},
+  {1},
+  {0},
+  {1},
+  {0},
+  {1},
+  {0}
+};
+
+//lines 30 - 46
+const float TestData[PatternCount][InputNodes] = {
+  {-1.31,  0.48},
+  {0.61, 0.20},
+  {-1.35,  0.70},
+  {0.86, 0.79},
+  {-1.45,  1.25},
+  {1.67, 0.64},
+  {-1.63,  0.76},
+  {1.93, -0.02},
+  {-0.54,  0.03},
+  {-0.60, 0.02},
+  {2.22,  -1.02},
+  {-1.28, -0.09},
+  {-1.62,  -0.40},
+  {1.91, -0.16},
+  {-1.71,  -0.55},
+  {0.70, -0.80},
+  {-2.11,  -0.53}
+}; 
+
+const float TestData_Target[PatternCount][OutputNodes] = {
+  {1},
+  {0},
+  {1},
+  {0},
+  {1},
+  {0},
+  {1},
+  {0},
+  {0},
+  {1},
+  {0},
+  {0},
+  {1},
+  {0},
+  {1},
+  {0},
+  {1}
+};
 
 /******************************************************************
  * End Network Configuration
@@ -25,6 +106,7 @@ int RandomizedIndex[PatternCount];
 long  TrainingCycle;
 float Rando;
 float Error;
+float Test_Error;
 float Accum;
 
 
@@ -48,7 +130,6 @@ void setup(){
 
 void loop (){
 
-
 /******************************************************************
 * Initialize HiddenWeights and ChangeHiddenWeights 
 ******************************************************************/
@@ -71,7 +152,13 @@ void loop (){
       OutputWeights[j][i] = 2.0 * ( Rando - 0.5 ) * InitialWeightMax ;
     }
   }
+  Serial.println();
+  Serial.println();
+  Serial.print("--------------------------");
+  Serial.println();
   Serial.println("Initial/Untrained Outputs: ");
+  Serial.print("--------------------------");
+  Serial.println();
   toTerminal();
 /******************************************************************
 * Begin training 
@@ -211,7 +298,43 @@ void loop (){
   Serial.println ();
   Serial.println ();  
   ReportEvery1000 = 1;
+
+
+  /******************************************************************
+  * Test experimental data accuracy
+  ******************************************************************/
+  
+  while(1)
+  {
+    for( i = 0 ; i < HiddenNodes ; i++ ) {    
+        Accum = HiddenWeights[InputNodes][i] ;
+        for( j = 0 ; j < InputNodes ; j++ ) {
+          Accum += TestData[p][j] * HiddenWeights[j][i] ;
+        }
+        Hidden[i] = 1.0/(1.0 + exp(-Accum)) ;
+      }
+      
+
+    for( i = 0 ; i < OutputNodes ; i++ ) {    
+        Accum = OutputWeights[HiddenNodes][i] ;
+        for( j = 0 ; j < HiddenNodes ; j++ ) {
+          Accum += Hidden[j] * OutputWeights[j][i] ;
+        }
+        Output[i] = 1.0/(1.0 + exp(-Accum)) ;   
+        OutputDelta[i] = (TestData_Target[p][i] - Output[i]) * Output[i] * (1.0 - Output[i]) ;   
+        Error += 0.5 * (TestData_Target[p][i] - Output[i]) * (TestData_Target[p][i] - Output[i]) ;
+      }
+     
+     toTerminal_Test();
+
+     // functional end of loop 
+     while(1)
+     {
+      
+     }
+  }
 }
+
 
 void toTerminal()
 {
@@ -261,4 +384,60 @@ void toTerminal()
   }
 
 
+}
+
+
+void toTerminal_Test()
+{
+  Serial.print("-------------");
+  Serial.println();
+  Serial.print("Testing Data");
+  Serial.println();
+  Serial.print("-------------");
+  Serial.println();
+  for( p = 0 ; p < PatternCount ; p++ ) {  
+    Serial.println();
+    Serial.print ("  Training Pattern: ");
+    Serial.println (p);     
+    Serial.print ("  Input ");
+    for( i = 0 ; i < InputNodes ; i++ ) {
+      Serial.print (Input[p][i], DEC);
+      Serial.print (" ");
+    }
+
+    for( i = 0 ; i < HiddenNodes ; i++ ) {    
+      Accum = HiddenWeights[InputNodes][i] ;
+      for( j = 0 ; j < InputNodes ; j++ ) {
+        Accum += Input[p][j] * HiddenWeights[j][i] ;
+      }
+      Hidden[i] = 1.0/(1.0 + exp(-Accum)) ;
+    }
+
+    for( i = 0 ; i < OutputNodes ; i++ ) {    
+      Accum = OutputWeights[HiddenNodes][i] ;
+      for( j = 0 ; j < HiddenNodes ; j++ ) {
+        Accum += Hidden[j] * OutputWeights[j][i] ;
+      }
+      Output[i] = 1.0/(1.0 + exp(-Accum)) ; 
+    }
+    Serial.print ("  Output ");
+    for( i = 0 ; i < OutputNodes ; i++ ) {       
+      Serial.print (Output[i], 5);
+      Serial.print (" ");
+    Serial.print ("  Error ");
+    for( i = 0 ; i < OutputNodes ; i++ ) {  
+      //Test_Error = abs(Output[i] - TestData_Target[i][0])/Output[i];
+      Test_Error = abs(2*(Output[i] - TestData_Target[i][0])/(abs(Output[i]) + abs(TestData_Target[i][0])));
+      Serial.print (Test_Error, 5);
+      Serial.print (" ");
+    }
+    }
+  }
+  Serial.println();
+  Serial.println();
+  Serial.print("Testing Data Finished");
+  Serial.println();
+  Serial.print("--------");
+  Serial.println();
+  Serial.println();
 }
