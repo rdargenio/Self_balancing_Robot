@@ -1,0 +1,511 @@
+#include <math.h>
+#include <stdlib.h>
+#include <iostream>
+
+/******************************************************************
+ * Network Configuration - customized per network
+ ******************************************************************/
+
+#define PatternCount 60
+#define TestPatternCount 20
+#define InputNodes 3
+#define HiddenNodes 8
+#define OutputNodes 1
+#define LearningRate 0.005
+#define Momentum 0.8
+#define InitialWeightMax 0.5
+#define Success 0.001
+
+const float Input[PatternCount][InputNodes] = {
+    { -0.18 , -2.79 , 7.81 },
+    { -0.94 , 1.02 , 8.77 },
+    { -0.41 , 1.05 , 8.1 },
+    { -0.13 , -0.55 , 8.9 },
+    { -0.39 , 1.29 , 8.76 },
+    { -0.12 , 0.97 , 9.37 },
+    { 0.47 , 3.06 , 8.76 },
+    { 0.52 , 1.96 , 6.84 },
+    { 0.87 , 1.55 , 11.54 },
+    { 0.34 , -2.22 , 9.91 },
+    { 0.17 , 1.27 , 7.36 },
+    { -0.13 , -0.37 , 7.37 },
+    { -0.29 , -2.18 , 8.94 },
+    { -0.54 , 1.11 , 7.23 },
+    { 0.08 , 1.24 , 7.31 },
+    { -0.31 , 0.69 , 9.79 },
+    { 0.17 , 2.67 , 8.18 },
+    { -0.32 , -1.57 , 11.45 },
+    { 0.02 , 1.75 , 10.69 },
+    { 0.59 , 2.72 , 8.7 },
+    { 0.22 , 0.99 , 7.25 },
+    { -0.09 , -0.2 , 10.19 },
+    { -0.43 , -2.32 , 9.73 },
+    { 0.17 , 2.55 , 7.32 },
+    { -0.26 , -0.52 , 7.27 },
+    { 0.16 , -0.94 , 8.33 },
+    { -0.34 , -2.75 , 11.03 },
+    { 0.19 , 1.06 , 6.88 },
+    { -0.39 , -2.26 , 8.25 },
+    { -0.04 , 3.05 , 8.74 },
+    { 0.24 , 1.89 , 7.07 },
+    { 0.71 , 1.58 , 10.72 },
+    { 0.16 , -2.56 , 10.01 },
+    { -0.09 , 1.06 , 7.43 },
+    { -0.48 , -0.57 , 7.6 },
+    { 0.08 , 2.48 , 9.57 },
+    { -0.39 , 1.06 , 7.45 },
+    { -0.04 , 0.26 , 11.17 },
+    { 0.32 , 2.3 , 10 },
+    { -0.3 , -2.79 , 10.43 },
+    { -0.01 , 1.25 , 7.29 },
+    { 0.39 , 1.81 , 10.47 },
+    { -0.17 , 1.38 , 7.77 },
+    { 0.37 , 2.05 , 7.25 },
+    { -0.09 , 0.16 , 10.67 },
+    { -0.7 , -2.93 , 9.72 },
+    { -0.33 , 2.26 , 7.24 },
+    { -0.27 , 0.31 , 7.58 },
+    { -0.14 , 2.18 , 9.09 },
+    { 0 , 2.46 , 7.54 },
+    { -0.1 , -0.11 , 11.65 },
+    { -0.07 , 1.63 , 10.75 },
+    { 0 , 2.41 , 8.41 },
+    { -0.03 , 1.62 , 7.84 },
+    { -0.2 , -0.94 , 8.11 },
+    { -0.04 , -0.5 , 9.76 },
+    { -0.06 , -0.26 , 10.5 },
+    { 0.03 , 1.59 , 10.43 },
+    { -0.04 , -1.52 , 10.03 },
+    { -0.15 , -0.63 , 10.22 },
+};
+
+const double Target[PatternCount][OutputNodes] = {
+    { 0 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 0 },
+    { 0 },
+    { 0 },
+    { 0 },
+    { 0 },
+    { 1 },
+    { 0 },
+    { 1 },
+    { 0 },
+    { 1 },
+    { 1 },
+    { 0 },
+    { 0 },
+    { 0 },
+    { 1 },
+    { 0 },
+    { 1 },
+    { 0 },
+    { 1 },
+    { 0 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 0 },
+    { 0 },
+    { 0 },
+    { 1 },
+    { 0 },
+    { 1 },
+    { 1 },
+    { 0 },
+    { 1 },
+    { 1 },
+    { 0 },
+    { 1 },
+    { 0 },
+    { 0 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+    { 1 },
+};
+
+// lines 121 - 205
+const float TestData[TestPatternCount][InputNodes] = {
+    { 0.07 , 1.09 , 9.35 },
+    { 0.06 , 2.22 , 9.47 },
+    { -0.16 , -1.24 , 10.03 },
+    { 0.11 , 1.67 , 9.24 },
+    { 0.02 , -0.2 , 8.57 },
+    { 0.58 , 3.4 , 8.46 },
+    { 1.69 , 4.06 , 6.79 },
+    { 0.45 , -1.83 , -10.2 },
+    { 1.24 , 2.79 , 6.17 },
+    { 1.83 , -4.03 , 7.64 },
+    { 0.57 , -6.26 , 8.87 },
+    { -1.1 , -4.14 , 9.67 },
+    { -0.96 , -1.17 , 8.26 },
+    { -1.51 , -1.82 , 10.04 },
+    { -1.15 , 2.53 , 11.97 },
+    { -0.46 , 1.29 , 11.37 },
+    { -0.48 , -0.56 , 9.64 },
+    { -0.57 , -1.71 , 5.15 },
+    { -0.12 , 1.1 , 8.97 },
+};
+
+const double TestData_Target[TestPatternCount][OutputNodes] = {
+    { 255 },
+    { 255 },
+    { 255 },
+    { 255 },
+    { 255 },
+    { 255 },
+    { -255 },
+    { -255 },
+    { -255 },
+    { -255 },
+    { -255 },
+    { -255 },
+    { -255 },
+    { 255 },
+    { 255 },
+    { 255 },
+    { 255 },
+    { 255 },
+    { 255 },
+};
+
+/******************************************************************
+ * End Network Configuration
+ ******************************************************************/
+
+
+int i, j, p, q, r;
+int ReportEvery1000;
+int RandomizedIndex[PatternCount];
+long  TrainingCycle;
+float Rando;
+float Error;
+float Test_Error;
+float Accum;
+float error_temp;
+
+
+float Hidden[HiddenNodes];
+float Output[OutputNodes];
+float HiddenWeights[InputNodes+1][HiddenNodes];
+float OutputWeights[HiddenNodes+1][OutputNodes];
+float HiddenDelta[HiddenNodes];
+float OutputDelta[OutputNodes];
+float ChangeHiddenWeights[InputNodes+1][HiddenNodes];
+float ChangeOutputWeights[HiddenNodes+1][OutputNodes];
+
+void toTerminal();
+void toTerminal_Test();
+    
+int main(){
+
+    ReportEvery1000 = 1;
+    for( p = 0 ; p < PatternCount ; p++ ) {
+        RandomizedIndex[p] = p ;
+    }
+/******************************************************************
+* Initialize HiddenWeights and ChangeHiddenWeights
+******************************************************************/
+
+  for( i = 0 ; i < HiddenNodes ; i++ ) {
+    for( j = 0 ; j <= InputNodes ; j++ ) {
+      ChangeHiddenWeights[j][i] = 0.0 ;
+      Rando = float(rand()%100)/100;
+      HiddenWeights[j][i] = 2.0 * ( Rando - 0.5 ) * InitialWeightMax ;
+    }
+  }
+/******************************************************************
+* Initialize OutputWeights and ChangeOutputWeights
+******************************************************************/
+
+  for( i = 0 ; i < OutputNodes ; i ++ ) {
+    for( j = 0 ; j <= HiddenNodes ; j++ ) {
+      ChangeOutputWeights[j][i] = 0.0 ;
+      Rando = float(rand()%100)/100;
+      OutputWeights[j][i] = 2.0 * ( Rando - 0.5 ) * InitialWeightMax ;
+    }
+  }
+    std::cout<<std::endl<<std::endl<<"--------------------------"<<std::endl;
+    std::cout<<"Initial/Untrained Outputs: ";
+    std::cout<<std::endl<<"--------------------------"<<std::endl;
+    
+    toTerminal();
+    
+/******************************************************************
+* Begin training
+******************************************************************/
+
+  for( TrainingCycle = 1 ; TrainingCycle < 2147483647 ; TrainingCycle++) {
+
+/******************************************************************
+* Randomize order of training patterns
+******************************************************************/
+
+    for( p = 0 ; p < PatternCount ; p++) {
+        q = rand() % PatternCount;
+      r = RandomizedIndex[p] ;
+      RandomizedIndex[p] = RandomizedIndex[q] ;
+      RandomizedIndex[q] = r ;
+    }
+    Error = 0.0 ;
+ 
+/******************************************************************
+* Cycle through each training pattern in the randomized order
+******************************************************************/
+    for( q = 0 ; q < PatternCount ; q++ ) {
+      p = RandomizedIndex[q];
+
+/******************************************************************
+* Compute hidden layer activations******************************************************************/
+
+      for( i = 0 ; i < HiddenNodes ; i++ ) {
+        Accum = HiddenWeights[InputNodes][i] ;
+        for( j = 0 ; j < InputNodes ; j++ ) {
+          Accum += Input[p][j] * HiddenWeights[j][i] ;
+        }
+        Hidden[i] = 1.0/(1.0 + exp(-Accum)) ;
+      }
+
+/******************************************************************
+* Compute output layer activations and calculate errors
+******************************************************************/
+
+      for( i = 0 ; i < OutputNodes ; i++ ) {
+        Accum = OutputWeights[HiddenNodes][i] ;
+        for( j = 0 ; j < HiddenNodes ; j++ ) {
+          Accum += Hidden[j] * OutputWeights[j][i] ;
+        }
+        Output[i] = 1.0/(1.0 + exp(-Accum)) ;
+        OutputDelta[i] = (Target[p][i] - Output[i]) * Output[i] * (1.0 - Output[i]) ;
+          if(Output[i]<0)
+              Error += 1 - (0.5 * (Target[p][i] - Output[i]) * (Target[p][i] - Output[i]));
+          else
+              Error += 0.5 * (Target[p][i] - Output[i]) * (Target[p][i] - Output[i]);
+      }
+
+/******************************************************************
+* Backpropagate errors to hidden layer
+******************************************************************/
+
+      for( i = 0 ; i < HiddenNodes ; i++ ) {
+        Accum = 0.0 ;
+        for( j = 0 ; j < OutputNodes ; j++ ) {
+          Accum += OutputWeights[i][j] * OutputDelta[j] ;
+        }
+        HiddenDelta[i] = Accum * Hidden[i] * (1.0 - Hidden[i]) ;
+      }
+
+
+/******************************************************************
+* Update Inner-->Hidden Weights
+******************************************************************/
+
+
+      for( i = 0 ; i < HiddenNodes ; i++ ) {
+        ChangeHiddenWeights[InputNodes][i] = LearningRate * HiddenDelta[i] + Momentum * ChangeHiddenWeights[InputNodes][i] ;
+        HiddenWeights[InputNodes][i] += ChangeHiddenWeights[InputNodes][i] ;
+        for( j = 0 ; j < InputNodes ; j++ ) {
+          ChangeHiddenWeights[j][i] = LearningRate * Input[p][j] * HiddenDelta[i] + Momentum * ChangeHiddenWeights[j][i];
+          HiddenWeights[j][i] += ChangeHiddenWeights[j][i] ;
+        }
+      }
+
+/******************************************************************
+* Update Hidden-->Output Weights
+******************************************************************/
+
+      for( i = 0 ; i < OutputNodes ; i ++ ) {
+        ChangeOutputWeights[HiddenNodes][i] = LearningRate * OutputDelta[i] + Momentum * ChangeOutputWeights[HiddenNodes][i] ;
+        OutputWeights[HiddenNodes][i] += ChangeOutputWeights[HiddenNodes][i] ;
+        for( j = 0 ; j < HiddenNodes ; j++ ) {
+          ChangeOutputWeights[j][i] = LearningRate * Hidden[j] * OutputDelta[i] + Momentum * ChangeOutputWeights[j][i] ;
+          OutputWeights[j][i] += ChangeOutputWeights[j][i] ;
+        }
+      }
+    }
+
+/******************************************************************
+* Every 1000 cycles send data to terminal for display
+******************************************************************/
+    ReportEvery1000 = ReportEvery1000 - 1;
+    if (ReportEvery1000 == 0)
+    {
+        std::cout<<std::endl<<std::endl<<"TrainingCycle: ";
+        std::cout<<TrainingCycle;
+
+      toTerminal();
+        
+        std::cout<<std::endl<<std::endl<<" Error = ";
+        std::cout<<float(Error);
+
+      if (TrainingCycle==1)
+      {
+        ReportEvery1000 = 49999;
+      }
+      else
+      {
+        ReportEvery1000 = 50000;
+      }
+    }
+
+
+/******************************************************************
+* If error rate is less than pre-determined threshold then end
+******************************************************************/
+
+    if( Error < Success ) break ;
+  }
+    std::cout<<std::endl<<std::endl<<"TrainingCycle: ";
+    std::cout<<TrainingCycle;
+
+  toTerminal();
+    
+    std::cout<<" Error = ";
+    std::cout<<float(Error);
+
+    std::cout<<std::endl<<std::endl<<"Training Set Solved! ";
+    std::cout<<std::endl<<"----------------"<<std::endl<<std::endl;
+  ReportEvery1000 = 1;
+
+
+  /******************************************************************
+  * Test experimental data accuracy
+  ******************************************************************/
+  
+    for( i = 0 ; i < HiddenNodes ; i++ ) {
+        Accum = HiddenWeights[InputNodes][i] ;
+        for( j = 0 ; j < InputNodes ; j++ ) {
+          Accum += TestData[p][j] * HiddenWeights[j][i] ;
+        }
+        Hidden[i] = 1.0/(1.0 + exp(-Accum)) ;
+      }
+      
+
+    for( i = 0 ; i < OutputNodes ; i++ ) {
+        Accum = OutputWeights[HiddenNodes][i] ;
+        for( j = 0 ; j < HiddenNodes ; j++ ) {
+          Accum += Hidden[j] * OutputWeights[j][i] ;
+        }
+        Output[i] = 1.0/(1.0 + exp(-Accum)) ;
+        OutputDelta[i] = (TestData_Target[p][i] - Output[i]) * Output[i] * (1.0 - Output[i]) ;
+        Error += 0.5 * (TestData_Target[p][i] - Output[i]) * (TestData_Target[p][i] - Output[i]) ;
+      }
+     
+     toTerminal_Test();
+
+      return 0;
+}
+
+
+void toTerminal()
+{
+
+  for( p = 0 ; p < PatternCount ; p++ ) {
+      std::cout<<std::endl<<"  Training Pattern: "<<p<<std::endl;
+      std::cout<<"  Input ";
+    for( i = 0 ; i < InputNodes ; i++ ) {
+        std::cout<<Input[p][i];
+        std::cout<<" ";
+    }
+      std::cout<<"  Target ";
+    for( i = 0 ; i < OutputNodes ; i++ ) {
+        std::cout<<Target[p][i]*510 - 255;
+        std::cout<<" ";
+    }
+/******************************************************************
+* Compute hidden layer activations
+******************************************************************/
+
+    for( i = 0 ; i < HiddenNodes ; i++ ) {
+      Accum = HiddenWeights[InputNodes][i] ;
+      for( j = 0 ; j < InputNodes ; j++ ) {
+        Accum += Input[p][j] * HiddenWeights[j][i] ;
+      }
+      Hidden[i] = 1.0/(1.0 + exp(-Accum)) ;
+    }
+
+/******************************************************************
+* Compute output layer activations and calculate errors
+******************************************************************/
+
+    for( i = 0 ; i < OutputNodes ; i++ ) {
+      Accum = OutputWeights[HiddenNodes][i] ;
+      for( j = 0 ; j < HiddenNodes ; j++ ) {
+        Accum += Hidden[j] * OutputWeights[j][i] ;
+      }
+      Output[i] = 1.0/(1.0 + exp(-Accum)) ;
+    }
+      std::cout<<"  Output ";
+    for( i = 0 ; i < OutputNodes ; i++ ) {
+        std::cout<<float(Output[i]*510 - 255);
+        std::cout<<" ";
+    }
+  }
+
+
+}
+
+
+void toTerminal_Test()
+{
+    std::cout<<"------------"<<std::endl;
+    std::cout<<"Testing Data"<<std::endl;
+    std::cout<<"------------"<<std::endl;
+  for( p = 0 ; p < TestPatternCount ; p++ ) {
+      std::cout<<std::endl<<"  Training Pattern: "<<p;
+      std::cout<<std::endl<<"  Input ";
+    for( i = 0 ; i < InputNodes ; i++ ) {
+        std::cout<<TestData[p][i]<<" ";
+    }
+      std::cout<<"  Target ";
+    for( i = 0 ; i < OutputNodes ; i++ ) {
+        std::cout<<TestData_Target[p][i]<<" ";
+    }
+
+    for( i = 0 ; i < HiddenNodes ; i++ ) {
+      Accum = HiddenWeights[InputNodes][i] ;
+      for( j = 0 ; j < InputNodes ; j++ ) {
+        Accum += TestData[p][j] * HiddenWeights[j][i] ;
+      }
+      Hidden[i] = 1.0/(1.0 + exp(-Accum)) ;
+    }
+
+    for( i = 0 ; i < OutputNodes ; i++ ) {
+      Accum = OutputWeights[HiddenNodes][i] ;
+      for( j = 0 ; j < HiddenNodes ; j++ ) {
+        Accum += Hidden[j] * OutputWeights[j][i] ;
+      }
+      Output[i] = 1.0/(1.0 + exp(-Accum)) ;
+      Output[i] = Output[i]*510 - 255;
+    }
+      std::cout<<"  Output ";
+    for( i = 0 ; i < OutputNodes ; i++ ) {
+        std::cout<<float(Output[i])<<"   Error ";
+    for( i = 0 ; i < OutputNodes ; i++ ) {
+      Test_Error = abs(Output[i] - TestData_Target[p][i])/Output[i];
+      if(Test_Error > .5)
+        error_temp += 1;
+        std::cout<<float(Test_Error)<<" ";
+    }
+    }
+  }
+    std::cout<<std::endl<<std::endl<<"Accuracy = "<<float(error_temp/TestPatternCount)<<std::endl<<"Testing Data Finished"<<std::endl<<"----------------"<<std::endl<<std::endl;
+}
